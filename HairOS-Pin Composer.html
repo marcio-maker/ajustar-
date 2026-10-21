@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5, user-scalable=no">
+<meta name="theme-color" content="#f6f6f4">
+<title>HairOS Pin Composer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Poppins:wght@300;400;600&family=Montserrat:wght@300;400;600&family=Raleway:wght@300;400;600&family=Josefin+Sans:wght@300;400;600&family=Quicksand:wght@300;400;600&family=Oswald:wght@300;400;600&family=Playfair+Display:wght@400;600&family=Lora:wght@400;600&family=Cormorant+Garamond:wght@300;400;600&family=DM+Serif+Display&family=Abril+Fatface&family=Bebas+Neue&family=Dancing+Script:wght@400;600&family=Pacifico&family=Great+Vibes&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f6f4;--fg:#222;--card:#fff;--line:#ddd;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161616;--fg:#eee;--card:#222;--line:#444}}
+:root[data-theme="dark"]{--bg:#161616;--fg:#eee;--card:#222;--line:#444}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:Inter,system-ui,sans-serif;
+  overscroll-behavior:none;-webkit-text-size-adjust:100%;
+}
+
+.app{display:flex;flex-direction:column;min-height:100dvh;padding:calc(8px + var(--safe-t)) calc(10px + var(--safe-r)) calc(8px + var(--safe-b)) calc(10px + var(--safe-l));gap:10px}
+
+.stage{
+  position:sticky;top:0;z-index:20;display:flex;flex-direction:column;align-items:center;gap:8px;
+  background:var(--bg);padding:8px 0 10px;margin:0 -10px;padding-left:10px;padding-right:10px;
+  box-shadow:0 4px 10px -5px rgba(0,0,0,.25);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .stage{box-shadow:0 4px 10px -5px rgba(0,0,0,.7)}}
+
+canvas{
+  width:100%;max-width:min(100%, 340px);height:auto;aspect-ratio:2/3;
+  border:1px solid var(--line);background:#fff;border-radius:8px;
+  box-shadow:0 1px 6px rgba(0,0,0,.05);
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;
+}
+canvas:active{cursor:grabbing}
+
+.title{margin:0;font-weight:400;font-size:13px;opacity:.75;text-align:center}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:100%}
+
+button,.file{
+  padding:9px 12px;min-height:38px;border-radius:6px;border:1px solid var(--line);
+  background:var(--card);color:var(--fg);cursor:pointer;font-size:13px;font-family:inherit;
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;transition:border-color .15s, transform .05s;
+}
+button:active,.file:active{transform:scale(.98)}
+button:hover,.file:hover{border-color:#999}
+
+.panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px 12px;width:100%}
+label{font-size:12px;display:flex;flex-direction:column;gap:3px;color:#555}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) label{color:#aaa}}
+
+input[type=text],select{padding:7px 8px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:6px;font-size:13px;width:100%;font-family:inherit;height:34px}
+input[type=color]{width:100%;height:34px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:2px;cursor:pointer}
+
+input[type=range]{width:100%;height:24px;background:transparent;cursor:pointer;-webkit-appearance:none;appearance:none;margin-top:2px}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--line);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--card);border:2px solid var(--fg);margin-top:-6px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+input[type=range]::-moz-range-track{height:4px;background:var(--line);border-radius:2px}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--card);border:2px solid var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+
+h4{margin:6px 0 0;font-weight:600;font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;grid-column:1/-1;border-top:1px solid var(--line);padding-top:10px}
+h4:first-child{border-top:none;padding-top:0;margin-top:0}
+
+#zreset{padding:6px 10px;font-size:12px;height:32px;align-self:flex-end;grid-column:1/-1;background:transparent}
+#rs{margin-top:10px;background:transparent;color:#d9534f;border-color:#d9534f;grid-column:1/-1;justify-self:center;width:100%;max-width:200px}
+#rs:hover{background:#d9534f;color:#fff}
+
+@media (min-width: 700px){
+  canvas{max-width:min(100%, 420px)}
+  .panel{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px 14px}
+}
+@media (min-width: 960px){
+  .app{display:grid;grid-template-columns:minmax(340px, 440px) minmax(400px, 1fr);align-items:start;height:100dvh;overflow:hidden;gap:16px;padding:16px}
+  .stage{position:sticky;top:0;align-self:start;margin:0;padding:0;box-shadow:none;max-height:100dvh}
+  canvas{max-width:100%}
+  .side{height:100%;overflow-y:auto;padding-right:4px;overscroll-behavior:contain}
+  .panel{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  #rs{justify-self:start;max-width:150px;margin-top:20px}
+}
+
+#hint{display:none;font-size:12px;text-align:center;max-width:420px}
+#out{display:none;max-width:100%;border:1px solid var(--line);border-radius:8px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="stage">
+    <h3 class="title">Pin 1000×1500</h3>
+    <div class="toolbar">
+      <label class="file">Escolher foto<input id="f" type="file" accept="image/*" hidden></label>
+      <button id="dl">Baixar</button>
+      <button id="sh2">Compartilhar</button>
+    </div>
+    <canvas id="c" width="1000" height="1500"></canvas>
+    <div id="hint">Imagem final. Se o download não funcionar, clique com o botão direito (ou toque e segure) nela e salve:</div>
+    <img id="out" alt="Imagem final">
+  </div>
+
+  <div class="side">
+    <div class="panel">
+      <h4>Foto (Arraste e faça Pinça)</h4>
+      <label>Zoom (0.5× – 5×)<input id="z" type="range" min="0.5" max="5" step="0.01" value="1"></label>
+      <label>Horizontal<input id="x" type="range" min="-3" max="3" step="0.01" value="0"></label>
+      <label>Vertical<input id="y" type="range" min="-3" max="3" step="0.01" value="0"></label>
+      <button id="zreset" type="button">Resetar zoom e posição</button>
+
+      <h4>Texto</h4>
+      <label style="grid-column:1/-1">Texto<input id="t" type="text" value="Bob texturizado · 2B/3A"></label>
+      <label>Fonte
+        <select id="ff">
+          <optgroup label="Sans-serif"><option>Inter</option><option>Poppins</option><option>Montserrat</option><option>Raleway</option><option>Josefin Sans</option><option>Quicksand</option><option>Oswald</option><option>Bebas Neue</option></optgroup>
+          <optgroup label="Serifadas"><option>Playfair Display</option><option>Lora</option><option>Cormorant Garamond</option><option>DM Serif Display</option><option>Abril Fatface</option></optgroup>
+          <optgroup label="Manuscritas"><option>Dancing Script</option><option>Pacifico</option><option>Great Vibes</option><option>Caveat</option></optgroup>
+        </select>
+      </label>
+      <label>Peso<select id="fw"><option value="300">Light</option><option value="400" selected>Regular</option><option value="600">Bold</option></select></label>
+      <label>Caixa<select id="cs"><option value="n">Normal</option><option value="u">MAIÚSCULAS</option></select></label>
+      <label>Cor do texto<input id="col" type="color" value="#fbfaf7"></label>
+      
+      <label>Tamanho<input id="fs" type="range" min="24" max="140" step="1" value="58"></label>
+      <label>Posição vertical<input id="ty" type="range" min="5" max="98" step="0.5" value="90"></label>
+      <label>Espaçamento<input id="ls" type="range" min="0" max="20" step="0.5" value="0"></label>
+      <label>Sombra<input id="sh" type="range" min="0" max="40" step="1" value="14"></label>
+
+      <h4>Logo</h4>
+      <label class="file" style="grid-column:1/-1;background:var(--line);padding:8px;text-align:center;border-radius:6px;cursor:pointer">
+        Subir imagem do Logo
+        <input id="logoFile" type="file" accept="image/*" hidden>
+      </label>
+      <label>Cor do logo
+        <select id="lg">
+          <option value="none" selected>Original</option>
+          <option value="white">Branco</option>
+          <option value="black">Preto</option>
+        </select>
+      </label>
+      <label>Visibilidade
+        <select id="lvis">
+          <option value="on" selected>Ligado</option>
+          <option value="off">Desligado</option>
+        </select>
+      </label>
+      <label>Tamanho<input id="lw" type="range" min="80" max="700" step="1" value="260"></label>
+      <label>Horizontal<input id="lx" type="range" min="0" max="100" step="0.5" value="50"></label>
+      <label>Vertical<input id="ly" type="range" min="0" max="100" step="0.5" value="5"></label>
+
+      <button id="rs" type="button">Limpar tudo</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const c=document.getElementById('c'),g=c.getContext('2d');
+const $=id=>document.getElementById(id);
+
+const state={
+  zoom:1, ox:0, oy:0,
+  text:'Bob texturizado · 2B/3A',
+  font:'Inter', weight:'400', size:58, ty:90, ls:0, shadow:14,
+  color:'#fbfaf7', upper:false,
+  logo:'none', lvis:'on', lw:260, lx:50, ly:5
+};
+let img=null;
+let logoImg=null;
+
+function drawSoon(){
+  requestAnimationFrame(draw);
+}
+
+function wrapText(ctx,text,maxW){
+  const words=text.split(' ');const lines=[];let cur='';
+  for(const w of words){
+    const test=cur?cur+' '+w:w;
+    if(ctx.measureText(test).width>maxW&&cur){lines.push(cur);cur=w;}
+    else cur=test;
+  }
+  if(cur)lines.push(cur);
+  return lines;
+}
+
+async function draw(){
+  try{await document.fonts.load(state.weight+' 50px "'+state.font+'"');}catch(e){}
+  g.clearRect(0,0,1000,1500);
+  g.fillStyle='#fff';g.fillRect(0,0,1000,1500);
+  
+  if(img){
+    const s=Math.max(1000/img.width,1500/img.height)*state.zoom;
+    const iw=img.width*s,ih=img.height*s;
+    const dx=(1000-iw)/2+state.ox*(iw-1000)/2;
+    const dy=(1500-ih)/2+state.oy*(ih-1500)/2;
+    g.drawImage(img,dx,dy,iw,ih);
+  }else{
+    g.fillStyle='#f0efec';g.fillRect(0,0,1000,1500);
+    g.fillStyle='#aaa';g.font='300 36px Inter,sans-serif';g.textAlign='center';g.textBaseline='middle';
+    g.fillText('Escolha uma foto',500,750);
+  }
+  
+  if(logoImg && state.lvis==='on'){
+    const lw=state.lw;
+    const lh=lw * (logoImg.naturalHeight / logoImg.naturalWidth);
+    g.save();
+    if(state.logo === 'white') g.filter = 'brightness(0) invert(1)';
+    if(state.logo === 'black') g.filter = 'brightness(0)';
+    g.drawImage(logoImg, (1000-lw)*state.lx/100, (1500-lh)*state.ly/100, lw, lh);
+    g.restore();
+  }
+
+  let txt=state.upper?state.text.toUpperCase():state.text;
+  if(!txt)return;
+  let size=state.size;
+  g.save();
+  g.textAlign='center';g.textBaseline='middle';g.fillStyle=state.color;
+  const set=()=>{g.font=state.weight+' '+size+'px "'+state.font+'", sans-serif';if('letterSpacing' in g)g.letterSpacing=state.ls+'px';};
+  set();
+  while(g.measureText(txt).width>920&&size>16){size-=2;set();}
+  const lines=wrapText(g,txt,920);
+  const lineH=size*1.15;
+  const totalH=lines.length*lineH;
+  const baseY=1500*state.ty/100-(totalH-lineH)/2;
+  if(state.shadow>0){g.shadowColor='rgba(0,0,0,.4)';g.shadowBlur=state.shadow;g.shadowOffsetY=2;}
+  lines.forEach((ln,i)=>g.fillText(ln,500+state.ls/2,baseY+i*lineH));
+  g.restore();
+}
+
+const bindings=[['z','zoom'],['x','ox'],['y','oy'],['t','text'],['ff','font'],['fw','weight'],['fs','size'],['ty','ty'],['ls','ls'],['sh','shadow'],['col','color'],['lg','logo'],['lvis','lvis'],['lw','lw'],['lx','lx'],['ly','ly']];
+bindings.forEach(([id,key])=>{
+  const el=$(id);
+  el.addEventListener('input',()=>{
+    state[key]=el.type==='range'?+el.value:el.value;
+    drawSoon();
+  });
+});
+$('cs').addEventListener('input',()=>{state.upper=$('cs').value==='u';drawSoon();});
+
+$('f').onchange=e=>{
+  const r=e.target.files[0];if(!r)return;
+  const i=new Image();
+  i.onload=()=>{img=i;drawSoon();};
+  i.src=URL.createObjectURL(r);
+};
+
+$('logoFile').onchange=e=>{
+  const r=e.target.files[0];if(!r)return;
+  const i=new Image();
+  i.onload=()=>{logoImg=i;drawSoon();};
+  i.src=URL.createObjectURL(r);
+};
+
+/* =========================================================
+   LÓGICA AVANÇADA DE ARRASTAR E ZOOM (PAN & PINCH)
+   ========================================================= */
+let drag={active:false,target:null,sx:0,sy:0,ox0:0,oy0:0,lx0:0,ly0:0};
+let pinch={active:false,startDist:0,startZoom:1};
+function pinchDist(touches){return Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY);}
+
+c.addEventListener('pointerdown',e=>{
+  if(pinch.active) return;
+  drag.active=true;drag.sx=e.clientX;drag.sy=e.clientY;
+  const rect=c.getBoundingClientRect();
+  const px=(e.clientX-rect.left)/rect.width, py=(e.clientY-rect.top)/rect.height;
+  drag.target='photo';
+  
+  if(logoImg && state.lvis==='on'){
+    const lw=state.lw;
+    const lh=lw * (logoImg.naturalHeight / logoImg.naturalWidth);
+    const lx0=state.lx/100,ly0=state.ly/100;
+    if(px>lx0-0.05 && px<lx0+state.lw/1000+0.05 && py>ly0-0.05 && py<ly0+lh/1500+0.05){
+      drag.target='logo';
+    }
+  }
+  
+  if(drag.target==='photo'){drag.ox0=state.ox;drag.oy0=state.oy;}
+  else{drag.lx0=state.lx;drag.ly0=state.ly;}
+  try{c.setPointerCapture(e.pointerId);}catch(_){}
+});
+
+c.addEventListener('pointermove',e=>{
+  if(!drag.active||pinch.active)return;
+  const rect=c.getBoundingClientRect();
+  const dx=(e.clientX-drag.sx)/rect.width, dy=(e.clientY-drag.sy)/rect.height;
+  if(drag.target==='photo'){
+    state.ox=Math.max(-3,Math.min(3,drag.ox0+dx*2));
+    state.oy=Math.max(-3,Math.min(3,drag.oy0+dy*2));
+    $('x').value=state.ox;$('y').value=state.oy;
+  }else{
+    state.lx=Math.max(0,Math.min(100,drag.lx0+dx*100));
+    state.ly=Math.max(0,Math.min(100,drag.ly0+dy*100));
+    $('lx').value=state.lx;$('ly').value=state.ly;
+  }
+  drawSoon();
+});
+
+c.addEventListener('pointerup',()=>{if(drag.active){drag.active=false;drag.target=null;}});
+c.addEventListener('pointercancel',()=>{drag.active=false;drag.target=null;});
+
+// Pinça
+c.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){
+    pinch.active=true;drag.active=false;
+    pinch.startDist=pinchDist(e.touches);
+    pinch.startZoom=state.zoom;
+    
+    const rect=c.getBoundingClientRect();
+    const cx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    const cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    pinch.px=(cx-rect.left)/rect.width;
+    pinch.py=(cy-rect.top)/rect.height;
+  }
+},{passive:true});
+
+c.addEventListener('touchmove',e=>{
+  if(pinch.active&&e.touches.length===2){
+    e.preventDefault();
+    const d=pinchDist(e.touches);
+    const newZoom = Math.max(0.5, Math.min(5, pinch.startZoom * (d / pinch.startDist)));
+    
+    const scaleRatio = newZoom / state.zoom;
+    const cx = (pinch.px - 0.5) * 2;
+    const cy = (pinch.py - 0.5) * 2;
+    state.ox = Math.max(-3, Math.min(3, state.ox + (cx * (scaleRatio - 1) * 2)));
+    state.oy = Math.max(-3, Math.min(3, state.oy + (cy * (scaleRatio - 1) * 2)));
+    
+    state.zoom = newZoom;
+    $('z').value=state.zoom;
+    $('x').value=state.ox;
+    $('y').value=state.oy;
+    drawSoon();
+  }
+},{passive:false});
+
+c.addEventListener('touchend',e=>{
+  if(pinch.active&&e.touches.length<2){pinch.active=false;}
+},{passive:true});
+
+// Mouse Wheel
+c.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const isTrackpad = Math.abs(e.deltaY) < 10;
+  const speed = isTrackpad ? 0.015 : 0.002;
+  const newZoom = Math.max(0.5, Math.min(5, state.zoom - e.deltaY * speed));
+  
+  const rect=c.getBoundingClientRect();
+  const px=(e.clientX-rect.left)/rect.width;
+  const py=(e.clientY-rect.top)/rect.height;
+  const scaleRatio = newZoom / state.zoom;
+  const cx = (px - 0.5) * 2;
+  const cy = (py - 0.5) * 2;
+  state.ox = Math.max(-3, Math.min(3, state.ox + (cx * (scaleRatio - 1) * 2)));
+  state.oy = Math.max(-3, Math.min(3, state.oy + (cy * (scaleRatio - 1) * 2)));
+
+  state.zoom = newZoom;
+  $('z').value=state.zoom;
+  $('x').value=state.ox;
+  $('y').value=state.oy;
+  drawSoon();
+},{passive:false});
+
+$('zreset').onclick=()=>{
+  state.zoom=1;$('z').value=1;
+  state.ox=0;$('x').value=0;
+  state.oy=0;$('y').value=0;
+  drawSoon();
+};
+
+// Exportar WebP
+async function exportImg(){
+  await draw();
+  return new Promise(r=>{
+    c.toBlob(b=>{
+      if(b&&b.type==='image/webp')return r(b);
+      c.toBlob(r,'image/png');
+    },'image/webp',0.92);
+  });
+}
+async function showOut(){
+  const b=await exportImg();
+  if(!b){alert('Não foi possível gerar a imagem.');return null;}
+  const ext=b.type==='image/webp'?'webp':'png';
+  const name='hairos-pin.'+ext;
+  const u=URL.createObjectURL(b);
+  $('out').src=u;$('out').style.display='block';$('hint').style.display='block';
+  return {b,u,name};
+}
+$('dl').onclick=async()=>{
+  const r=await showOut();if(!r)return;
+  const a=document.createElement('a');a.download=r.name;a.href=r.u;
+  document.body.appendChild(a);a.click();a.remove();
+};
+$('sh2').onclick=async()=>{
+  const r=await showOut();if(!r)return;
+  const f=new File([r.b],r.name,{type:r.b.type});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){
+    try{await navigator.share({files:[f]});}catch(e){}
+  }
+};
+$('rs').onclick=()=>{
+  if(!confirm('Limpar tudo e recomeçar?'))return;
+  location.reload();
+};
+
+draw();
+</script>
+</body>
+</html>
